@@ -24,7 +24,7 @@ class ClientManager:
         
         self.chat = []
         self.channels = []
-        self.current_channel = "lobby"
+        self.current_channel = {"name": None}
                 
     def connect(self, host, user):
         if self.running:

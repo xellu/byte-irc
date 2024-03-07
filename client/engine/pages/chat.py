@@ -6,6 +6,15 @@ from photon.theme import Variants
 from engine.client import Client
 from engine.packet import Encode
 
+text_varians = {
+    "message": Variants.DEFAULT,
+    
+    "info": Variants.PRIMARY,
+    "error": Variants.ERROR,
+    "warn": Variants.WARNING,
+    "success": Variants.SUCCESS
+}
+
 class Chat(Page):
     def __init__(self, app):
         self.app = app
@@ -13,8 +22,9 @@ class Chat(Page):
         self.focus = 0
         self.focusable = ["chat", "channels"]
         
-        self.message = ""
         self.chat_index = 0
+        
+        self.message = ""
         
         self.sidebar = SideBar(app, y=1, selected=2, auto_render=False)
         
@@ -47,9 +57,11 @@ class Chat(Page):
             variant=Variants.DEFAULT if focus == "chat" else Variants.PRIMARY)
         
         #render chat
-        msgY = 2
-        msgYMax = self.app.screenY-2
-        
+        startY = 2
+        endY = self.app.screenY-1
+        chat = Client.chat[-(endY-startY)+self.chat_index:]
+        for i, line in enumerate(chat):
+            Text(self.app, line.get("content"), y=startY+i, x=17, variant=text_varians.get(line.get("type"), Variants.DEFAULT))        
         
     def on_input(self, key):
         if get_key(key) == "tab":

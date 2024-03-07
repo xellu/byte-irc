@@ -12,6 +12,8 @@ def channel_list(client, packet):
 def channel_join(client, packet):
     if packet.get("success"):
         client.current_channel = packet.get("channel")
+        
+    print(packet)
     
 #chat packets-------------------------------------------------------------------
     

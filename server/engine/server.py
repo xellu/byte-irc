@@ -13,16 +13,21 @@ Warn = console.tag(console.COLOR.YELLOW, "Socket", severity=console.Level.WARN).
 
 class ServerThread:
     def __init__(self, conn, addr):
+        # console.error("created new server thread")
+        
         self.conn = conn
         self.addr = addr
         
         self.auth_timeout = time.time() + 30
         self.user = None
         
+        self.packet_queue = []
         self.running = True
         
     def read(self):
-        while self.running:
+        while True:
+            if not self.running: break
+            
             try:
                 data = self.conn.recv(1024)
                 if not data:
@@ -42,13 +47,15 @@ class ServerThread:
                 break
             
             packet = Decode(data)
-            print(f"received: {packet}")
             self.process_packet(packet)
             
     def process_packet(self, packet):
         if packet.get("id") == None:
             Error(f"[-] {self.addr[0]} sent invalid packet")
             return
+        
+        # if packet.get("id") not in ["heartbeat", "channel.list"]:
+        #     Info(f"received: {packet}")
         
         if not self.user and packet.get("id") != "auth":
             self.write(Encode(id="auth", success=False, error="Authentication required"))
@@ -61,14 +68,18 @@ class ServerThread:
             Error(f"[-] {self.addr[0]} caused an error at packet@{packet.get('id')}: {e}")
 
     def write(self, packet):
-        print(f"sent: {packet}")
         if type(packet) == str:
             packet = packet.encode("utf-8")
+            
+        # if b"heartbeat" not in packet and b"channel.list" not in packet:
+        #     print(f"writing: {packet}")
             
         self.conn.send(packet)
 
     def event_loop(self):
-        while self.running:
+        while True:
+            if not self.running: break
+            
             if self.auth_timeout != 0 and time.time() > self.auth_timeout:
                 self.write(Encode(id="auth", success=False, error="Failed to authenticate in time"))
                 self.drop("authentication timeout")
@@ -77,18 +88,24 @@ class ServerThread:
                 self.write(Encode(id="auth", success=False, error="Connection timed out"))
                 self.drop("timed out")
                 
+            for packet in self.packet_queue:
+                # print(f"sending queued packet: {packet}")
+                self.write(packet)
+                self.packet_queue.remove(packet)
+                
             time.sleep(0.25)
+            
+    def queue(self, packet):
+        self.packet_queue.append(packet)
 
     def drop(self, reason=None):
         self.running = False
         self.conn.close()
         
         if self.user:
-            u = Users.find("username", self.user.username)
-            if u: Users.delete(u)
-            user = self.user.username
-        else:
-            user = self.addr[0]
+            Events.call("user.drop", self.user)
+        
+        user = self.addr[0]
         
         if reason:
             Info(f"[-] {user} dropped: {reason}")
