@@ -3,7 +3,7 @@ import threading
 import time
 
 from engine.packet import Encode, Decode
-from engine.core import Events
+from engine.core import Events, app
     
 class State:
     IDLE = "Idle"
@@ -24,6 +24,8 @@ class ClientManager:
     def connect(self, host, user):
         if self.running:
             return
+        
+        self.status_message = f"Connecting to {host}"
         
         try:
             self.status = State.CONNECTING
@@ -110,6 +112,8 @@ class ClientManager:
     def drop(self):
         self.status = State.DROPPED
         self.running = False
+        
+        app.open("Connect")
         
         try:
             self.conn.close()

@@ -23,9 +23,14 @@ def auth(server, packet):
     u = Item(
         username = user,
         channel = None,
-        last_heartbeat = time.time() + 5
+        last_heartbeat = time.time() + 5,
+        server = server
     )
     server.user = u
     Users.create(u)
     
     return Encode(id="auth", success=True, channel=None)
+
+@Events.on("heartbeat")
+def heartbeat(server, packet):
+    server.user.last_heartbeat = time.time() + 30

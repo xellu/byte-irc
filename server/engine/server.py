@@ -67,7 +67,7 @@ class ServerThread:
 
     def event_loop(self):
         while self.running:
-            if self.auth_timeout != None and time.time() > self.auth_timeout:
+            if not self.user and time.time() > self.auth_timeout:
                 self.write(Encode(id="auth", success=False, error="Failed to authenticate in time"))
                 self.drop("authentication timeout")
             
