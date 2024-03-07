@@ -5,7 +5,7 @@ from engine.packet import Encode
 
 from dataforge.database import Item
 
-@Events.on_packet("auth")
+@Events.on("auth")
 def auth(server, packet):
     user = str(packet.get("username"))
     
@@ -19,13 +19,13 @@ def auth(server, packet):
         return Encode(id="auth", success=False, error="User already exists")
     
     server.auth_timeout = None
-    server.user = user
     
     u = Item(
         username = user,
         channel = None,
-        last_heartbeat = time.time() + 60,
+        last_heartbeat = time.time() + 5
     )
+    server.user = u
     Users.create(u)
     
     return Encode(id="auth", success=True, channel=None)

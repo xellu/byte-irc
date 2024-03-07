@@ -1,6 +1,6 @@
 from photon import Page
 from photon.theme import Variants
-from photon.components import Input, Modal
+from photon.components import Input, Modal, Text
 
 from engine.client import Client, State
 import threading
@@ -25,13 +25,14 @@ class Connect(Page):
             case "username":
                 self.username.on_render(sc)
             case "menu":
-                if Client.status == State.CONNECTING:            
-                    Modal(self.app, "Connecting", f"Connecting to {self.ip}")
-                elif Client.status == State.ERROR:
-                    Modal(self.app, "Connection Failed", Client.status_message, variant=Variants.ERROR)
-                elif Client.status == State.CONNECTED:
+                if Client.status == State.CONNECTED:
                     self.app.open("Chat")
-        
+                elif Client.status in [State.CONNECTING]:
+                    Modal(self.app, "Connecting", Client.status_message, variant=Variants.PRIMARY)
+                elif Client.status in [State.ERROR, State.DROPPED, State.DISCONNECTED]:
+                    Modal(self.app, Client.status, Client.status_message, variant=Variants.ERROR)
+                    Text(self.app, "Press any key to retry", y = self.app.screenY)
+                
     def on_input(self, key):
         match self.stage:
             case "server":
@@ -39,7 +40,8 @@ class Connect(Page):
             case "username":
                 self.username.on_input(key)
             case "menu":
-                self.stage = "server"
+                if  Client.status in [State.ERROR, State.DROPPED, State.DISCONNECTED]:
+                    self.stage = "server"
         
     def server_submit(self, value):
         if value.replace(" ", "") != "":

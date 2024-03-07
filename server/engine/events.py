@@ -7,7 +7,7 @@ class EventManager:
     def __init__(self):
         self.events = {}
         
-    def on_packet(self, packet_id):
+    def on(self, packet_id):
         def wrapper(func):
             self.events[packet_id] = func
             return func

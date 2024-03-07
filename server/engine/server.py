@@ -16,7 +16,7 @@ class ServerThread:
         self.conn = conn
         self.addr = addr
         
-        self.auth_timeout = time.time() + 60
+        self.auth_timeout = time.time() + 30
         self.user = None
         
         self.running = True
@@ -26,29 +26,31 @@ class ServerThread:
             try:
                 data = self.conn.recv(1024)
                 if not data:
-                    Info(f"[-] {self.addr[0]} disconnected")
+                    self.drop("disconnected (no data)")
                     break
                 
             except ConnectionResetError:
-                Info(f"[-] {self.addr[0]} dropped: Connection reset by peer")
+                self.drop("connection reset by peer")
                 break
             
             except ConnectionAbortedError:
-                Info(f"[-] {self.addr[0]} dropped: Connection aborted")
+                self.drop("connection aborted")
                 break
             
             except Exception as error:
-                Info(f"[-] {self.addr[0]} dropped: {error}")
+                self.drop(f"exception: {error}")
                 break
             
             packet = Decode(data)
             self.process_packet(packet)
             
-        Warn(f"Connection aborted for {self.addr[0]}")
-
     def process_packet(self, packet):
         if packet.get("id") == None:
             Error(f"[-] {self.addr[0]} sent invalid packet")
+            return
+        
+        if not self.user and packet.get("id") != "auth":
+            self.write(Encode(id="auth", success=False, error="Authentication required"))
             return
             
         try:
@@ -66,8 +68,29 @@ class ServerThread:
     def event_loop(self):
         while self.running:
             if self.auth_timeout != None and time.time() > self.auth_timeout:
-                self.write(Encode(id="auth", success=False, message="Connection timed out"))
-                self.running = False
+                self.write(Encode(id="auth", success=False, error="Failed to authenticate in time"))
+                self.drop("authentication timeout")
+            
+            if self.user and self.user.last_heartbeat < time.time():
+                self.write(Encode(id="auth", success=False, error="Connection timed out"))
+                self.drop("timed out")
+
+    def drop(self, reason=None):
+        self.running = False
+        self.conn.close()
+        
+        if self.user:
+            u = Users.find("username", self.user.username)
+            if u: Users.delete(u)
+            user = self.user.username
+        else:
+            user = self.addr[0]
+        
+        if reason:
+            Info(f"[-] {user} dropped: {reason}")
+            return
+        
+        Info(f"[-] {user} dropped")
 
 def Listen():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

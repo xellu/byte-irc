@@ -10,8 +10,8 @@ def on_auth(client, packet):
         
     else:
         Events.call("on_error", packet.get("error"))
-
+        
         client.drop()
         client.status = State.ERROR
         client.status_message = packet.get("error")
-        
+        app.open("Connect")
