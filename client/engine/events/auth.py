@@ -11,6 +11,7 @@ def on_auth(client, packet):
         print("Successfully authenticated")
         
         client.status = State.CONNECTED
+        client.status_message = "Connected"
         threading.Thread(target=client.event_loop).start()
     else:
         #auth failed/connection dropped

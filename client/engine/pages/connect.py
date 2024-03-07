@@ -46,8 +46,7 @@ class Connect(Page):
     def server_submit(self, value):
         if value.replace(" ", "") != "":
             self.ip = value
-            
-        self.stage = "username"
+            self.stage = "username"
         
     def username_submit(self, value):
         if value.replace(" ", "") != "":
