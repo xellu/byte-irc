@@ -10,3 +10,5 @@ for p in PAGES:
     
 app.open("Connect")
 app.run()
+
+#port 5773
