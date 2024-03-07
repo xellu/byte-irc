@@ -13,6 +13,7 @@ def on_auth(client, packet):
         client.status = State.CONNECTED
         client.status_message = "Connected"
         threading.Thread(target=client.event_loop).start()
+        # return Encode(id="channel.list")
     else:
         #auth failed/connection dropped
         Events.call("on_error", packet.get("error"))

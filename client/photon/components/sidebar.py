@@ -45,7 +45,7 @@ class SideBar(Page):
         width = max([len(item.name) for item in self.items]) + 4
         sizeY = self.app.screenY - self.y
 
-        for i in range(self.y, self.app.screenY):
+        for i in range(self.y, self.app.screenY+1):
             sc.addstr(i, 0, " " * width, curses.color_pair(colors[1]))
 
         selected = self.selected if self.selected else 0

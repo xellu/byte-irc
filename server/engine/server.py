@@ -42,6 +42,7 @@ class ServerThread:
                 break
             
             packet = Decode(data)
+            print(f"received: {packet}")
             self.process_packet(packet)
             
     def process_packet(self, packet):
@@ -60,6 +61,7 @@ class ServerThread:
             Error(f"[-] {self.addr[0]} caused an error at packet@{packet.get('id')}: {e}")
 
     def write(self, packet):
+        print(f"sent: {packet}")
         if type(packet) == str:
             packet = packet.encode("utf-8")
             

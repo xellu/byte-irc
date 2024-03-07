@@ -1,6 +1,7 @@
 import socket
 import threading
 import time
+import json
 
 from engine.packet import Encode, Decode
 from engine.core import Events, app
@@ -20,6 +21,10 @@ class ClientManager:
         
         self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)    
         self.running = False
+        
+        self.chat = []
+        self.channels = []
+        self.current_channel = "lobby"
                 
     def connect(self, host, user):
         if self.running:
@@ -95,6 +100,7 @@ class ClientManager:
             if type(packet) == str:
                 packet = packet.encode("utf-8")
                 
+            print(f"Sending {json.loads(packet.decode('utf-8')).get('id')}")
             self.conn.send(packet)
         except Exception as error:
             Events.call("on_error", f"Failed to send packet: {error}")
@@ -107,6 +113,7 @@ class ClientManager:
             
             if next_heartbeat < time.time():
                 self.write(Encode(id="heartbeat", timestamp=time.time()))
+                self.write(Encode(id="channel.list"))
                 next_heartbeat = time.time() + 10
         
     def drop(self):

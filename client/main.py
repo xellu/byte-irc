@@ -1,8 +1,8 @@
 from engine.core import app
-from engine.pages import (root, connect, chat, quickactions)
-from engine.events import (events, auth)
+from engine.pages import (root, connect, chat, quickactions, channels)
+from engine.events import (events, auth, chat as chatEvent)
 
-PAGES = [connect.Connect, chat.Chat, quickactions.QuickActions]
+PAGES = [connect.Connect, chat.Chat, quickactions.QuickActions, channels.Channels]
 
 app.root = root.Root(app)
 for p in PAGES:

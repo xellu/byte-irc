@@ -7,6 +7,8 @@ from photon.theme import Variants
 from engine.core import Events, app
 from engine.client import Client, State
 
+from .connect import Connect
+
 class QuickActions(Page):
     def __init__(self, app):
         self.app = app
@@ -31,6 +33,14 @@ class QuickActions(Page):
                 if Client.status == State.CONNECTED:
                     Client.drop()
                     Client.status_message = "Disconnected"
+                
+                for page in self.app.pages:
+                    if type(page) == Connect:
+                        page.stage = "server"
+                        page.username.value = ""
+                        page.server_address.value = ""
+                        page.user = ""
+                        page.ip = ""
                 
                 self.app.open("Connect")
             case "Settings":
