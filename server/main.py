@@ -4,6 +4,7 @@ from dataforge import console
 
 try:
     from engine import core, server
+    from engine.packets import auth
 except Exception as error:
     console.error(f"Failed to initialize server engine")
     console.error(f"Error: {error}")

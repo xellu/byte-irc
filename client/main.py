@@ -1,13 +1,12 @@
-from photon import Photon
+from engine.core import app
+from engine.pages import (root, connect, chat)
 
-from engine.pages import (root, connect)
+PAGES = [connect.Connect, chat.Chat]
 
-app = Photon(root=root.Root)
-PAGES = [connect.Connect]
-
+app.root = root
 for p in PAGES:
     app.register_page(p(app))
-    
+
 app.open("Connect")
 app.run()
 
