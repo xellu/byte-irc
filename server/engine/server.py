@@ -2,7 +2,7 @@ import socket
 import threading
 import time
 
-from engine.core import Config, Users, Events
+from engine.core import Config, Users, Events, Packets
 from engine.packet import Encode, Decode
 
 from dataforge import console
@@ -54,7 +54,7 @@ class ServerThread:
             return
             
         try:
-            r = Events.pcall(packet, self, packet)
+            r = Packets.pcall(packet, self, packet)
             if r: self.write(r)
         except Exception as e:
             Error(f"[-] {self.addr[0]} caused an error at packet@{packet.get('id')}: {e}")
@@ -67,13 +67,15 @@ class ServerThread:
 
     def event_loop(self):
         while self.running:
-            if not self.user and time.time() > self.auth_timeout:
+            if self.auth_timeout != 0 and time.time() > self.auth_timeout:
                 self.write(Encode(id="auth", success=False, error="Failed to authenticate in time"))
                 self.drop("authentication timeout")
             
             if self.user and self.user.last_heartbeat < time.time():
                 self.write(Encode(id="auth", success=False, error="Connection timed out"))
                 self.drop("timed out")
+                
+            time.sleep(0.25)
 
     def drop(self, reason=None):
         self.running = False

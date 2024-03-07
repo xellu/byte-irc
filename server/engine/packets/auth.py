@@ -1,11 +1,11 @@
 import time
 
-from engine.core import Events, Users
+from engine.core import Packets, Events, Users
 from engine.packet import Encode
 
 from dataforge.database import Item
 
-@Events.on("auth")
+@Packets.on("auth")
 def auth(server, packet):
     user = str(packet.get("username"))
     
@@ -18,19 +18,21 @@ def auth(server, packet):
     if Users.find("username", user):
         return Encode(id="auth", success=False, error="User already exists")
     
-    server.auth_timeout = None
+    server.auth_timeout = 0
     
     u = Item(
         username = user,
-        channel = None,
+        channel = "lobby",
         last_heartbeat = time.time() + 5,
         server = server
     )
     server.user = u
     Users.create(u)
     
-    return Encode(id="auth", success=True, channel=None)
+    Events.call("channel.join", server, {"channel": "lobby"})
+    
+    return Encode(id="auth", success=True, channel="lobby")
 
-@Events.on("heartbeat")
+@Packets.on("heartbeat")
 def heartbeat(server, packet):
     server.user.last_heartbeat = time.time() + 30
