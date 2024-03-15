@@ -3,7 +3,7 @@ import time
 from engine.core import Packets, Events, Users, Channels
 from engine.packet import Encode
 
-from dataforge import console
+from dataforge import console, database
 
 def send_message(channel, author, message):
     for c in Channels.content:
@@ -67,13 +67,16 @@ def channel_join(server, packet):
     prev_channel = server.user.channel
     
     if prev_channel == packet.get("channel"):
-        return Encode(id="channel.join", message="Already in channel")
+        send_error(server, "Already in channel")
+        return Encode(id="channel.join", message="Already in channel", success=False)
     
     if not channel:
-        return Encode(id="channel.join", message="Channel not found")
+        send_error(server, "Channel not found")
+        return Encode(id="channel.join", message="Channel not found", success=False)
     
     if channel.password and packet.get("password") != channel.password:
-        return Encode(id="channel.join", message="Invalid password")
+        send_error(server, "Invalid password")
+        return Encode(id="channel.join", message="Invalid password", success=False)
     
     for c in Channels.content:
         if server.user in c.users:
@@ -87,7 +90,7 @@ def channel_join(server, packet):
     
     announce_message(channel.name, f"{server.user.username} joined the channel")
     announce_message(prev_channel, f"{server.user.username} left the channel")
-    return Encode(id="channel.join", channel=channel.name)
+    return Encode(id="channel.join", channel=channel.name, success=True)
     
 @Packets.on("channel.list")
 def channel_list(server, packet):
@@ -107,3 +110,40 @@ def channel_list(server, packet):
         
     return Encode(id="channel.list", channels=channels, current=current)
     
+@Packets.on("channel.create")
+def channel_create(server, packet):
+    if not server.user:
+        return
+    
+    if Channels.find("name", packet.get("name")):
+        send_error("Channel already exists")
+        return Encode(id="channel.create", success=False, message="Channel already exists")
+    
+    name = packet.get("name")
+    if name == None:
+        send_error("No name specified")
+        return Encode(id="channel.create", success=False, message="No name specified")
+    
+    if len(name) < 3:
+        send_error("Channel name is too short (3-40)")
+        return Encode(id="channel.create", success=False, message="Channel name is too short (3-40)")
+        
+    if len(name) > 40:
+        send_error("Channel name is too long (3-40)")
+        return Encode(id="channel.create", success=False, message="Channel name is too long (3-40)")
+    
+    password = packet.get("password")
+    if password in [0, None, ""]:
+        password = None
+    
+    c = database.Item(
+        name = name,
+        password = password,
+        users = []
+    )
+    
+    Channels.create(c)
+    Packets.call("channel.join", server, {"channel": name})
+    
+    return Encode(id="channel.create", success=True,
+        message="Private channel created, only people with the password can join" if c.password else "Public channel created, anyone can join" )
